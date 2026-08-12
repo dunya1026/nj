@@ -47,7 +47,7 @@ function selectEvent(index){
   rail.querySelectorAll("button").forEach((button,i)=>{button.classList.toggle("active",i===index);button.setAttribute("aria-pressed",i===index?"true":"false")});
   markers.forEach((marker,i)=>marker.getElement()?.querySelector(".map-pin")?.classList.toggle("active",i===index));
   map.flyTo(event.coords,index===11?8:10,{duration:1.1});
-  const gallery=document.querySelector(".event-gallery"); gallery.className=`event-gallery ${event.photos.length===1?"single":""} ${event.photos.length===3?"triple":""}`;
+  const gallery=document.querySelector(".event-gallery"); gallery.className=`event-gallery ${event.photos.length===1?"single":""} ${event.photos.length===3?"triple":""} ${event.place==="파주 지혜의 숲"||event.place==="고양"?"person-centered":""}`;
   gallery.innerHTML=event.photos.map((photo,i)=>`<img src="./assets/map/${photo}.jpeg" alt="${event.place}에서 남긴 추억 사진" loading="lazy" class="${i===0?"lead-photo":""}">`).join("");
   document.querySelector(".event-number").textContent=`MEMORY ${String(index+1).padStart(2,"0")} / ${summerEvents.length}`;
   document.querySelector(".event-date").textContent=event.date; document.querySelector(".event-copy h3").textContent=event.place;
