@@ -20,6 +20,8 @@ const summerEvents = [
 ];
 
 let selectedEvent = 0;
+let selectedPhoto = 0;
+let swipeStartX = null;
 const map = L.map(document.querySelector(".memory-map"), { scrollWheelZoom:false, zoomControl:false, minZoom:5 }).setView([36.3,127.7],6);
 L.control.zoom({position:"bottomright"}).addTo(map);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom:18,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(map);
@@ -41,16 +43,31 @@ summerEvents.forEach((event,index)=>{
 });
 
 function selectEvent(index){
-  selectedEvent=index; const event=summerEvents[index];
+  selectedEvent=index; selectedPhoto=0; const event=summerEvents[index];
   rail.querySelectorAll("button").forEach((button,i)=>{button.classList.toggle("active",i===index);button.setAttribute("aria-pressed",i===index?"true":"false")});
   markers.forEach((marker,i)=>marker.getElement()?.querySelector(".map-pin")?.classList.toggle("active",i===index));
   map.flyTo(event.coords,index===9?8:10,{duration:1.1});
-  const gallery=document.querySelector(".event-gallery"); gallery.className=`event-gallery ${event.photos.length===1?"single":""} ${event.photos.length===3?"triple":""} ${event.place==="파주 지혜의 숲"||event.place==="고양"?"person-centered":""}`;
-  gallery.innerHTML=event.photos.map((photo,i)=>`<img src="./assets/map/${photo}.jpeg" alt="${event.place}에서 남긴 추억 사진" loading="lazy" class="${i===0?"lead-photo":""}">`).join("");
+  renderEventPhoto();
   document.querySelector(".event-number").textContent=`MEMORY ${String(index+1).padStart(2,"0")} / ${summerEvents.length}`;
   document.querySelector(".event-date").textContent=event.date; document.querySelector(".event-copy h3").textContent=event.place;
   document.querySelector(".event-area").textContent=`⌖ ${event.area}`; document.querySelector(".event-note").textContent=event.note;
   document.querySelector(".event-detail").animate([{opacity:0,transform:"translateY(10px)"},{opacity:1,transform:"translateY(0)"}],{duration:420,easing:"ease"});
+}
+function renderEventPhoto(){
+  const event=summerEvents[selectedEvent]; const photo=event.photos[selectedPhoto]; const gallery=document.querySelector(".event-gallery");
+  const controls=event.photos.length>1?`<button class="slider-arrow slider-prev" type="button" aria-label="이전 사진">‹</button><button class="slider-arrow slider-next" type="button" aria-label="다음 사진">›</button><div class="slider-dots" aria-label="사진 선택">${event.photos.map((_,i)=>`<button type="button" class="${i===selectedPhoto?"active":""}" aria-label="${i+1}번 사진" aria-pressed="${i===selectedPhoto}"></button>`).join("")}</div><span class="photo-count">${selectedPhoto+1} / ${event.photos.length}</span>`:"";
+  gallery.className="event-gallery slider"; gallery.innerHTML=`<div class="event-photo-frame" style="background-image:url('./assets/map/${photo}.jpeg')"><img src="./assets/map/${photo}.jpeg" alt="${event.place}에서 남긴 추억 사진"></div>${controls}`;
+  gallery.querySelector(".slider-prev")?.addEventListener("click",()=>{selectedPhoto=(selectedPhoto-1+event.photos.length)%event.photos.length;renderEventPhoto()});
+  gallery.querySelector(".slider-next")?.addEventListener("click",()=>{selectedPhoto=(selectedPhoto+1)%event.photos.length;renderEventPhoto()});
+  gallery.querySelectorAll(".slider-dots button").forEach((button,i)=>button.addEventListener("click",()=>{selectedPhoto=i;renderEventPhoto()}));
+  gallery.addEventListener("touchstart",touchEvent=>{swipeStartX=touchEvent.touches[0].clientX},{passive:true});
+  gallery.addEventListener("touchend",touchEvent=>{
+    if(swipeStartX===null||event.photos.length<2) return;
+    const distance=touchEvent.changedTouches[0].clientX-swipeStartX; swipeStartX=null;
+    if(Math.abs(distance)<45) return;
+    selectedPhoto=distance<0?(selectedPhoto+1)%event.photos.length:(selectedPhoto-1+event.photos.length)%event.photos.length;
+    renderEventPhoto();
+  },{passive:true});
 }
 selectEvent(0); map.fitBounds(eventBounds,{padding:[40,40]});
 document.querySelector(".map-reset").addEventListener("click",()=>map.fitBounds(eventBounds,{padding:[40,40]}));
